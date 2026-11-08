@@ -1,0 +1,17 @@
+# Local dev: API + Postgres (mirrors the AWS setup)
+services:
+  db:
+    image: postgres:16
+    environment:
+      POSTGRES_DB: cargopulse
+      POSTGRES_USER: cargopulse_admin
+      POSTGRES_PASSWORD: localpass
+  api:
+    build: ./app
+    ports: ["8000:8000"]
+    depends_on: [db]
+    environment:
+      DB_HOST: db
+      DB_NAME: cargopulse
+      DB_USER: cargopulse_admin
+      DB_PASSWORD: localpass

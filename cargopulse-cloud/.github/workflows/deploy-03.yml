@@ -1,0 +1,46 @@
+# Build the API image, push to ECR, roll out to ECS.
+# One-time setup: IAM role trusting GitHub OIDC, saved as repo secret AWS_ROLE_ARN.
+name: deploy-platform
+
+on:
+  push:
+    branches: [main]
+    paths: ["03-three-tier-platform/app/**"]
+
+permissions:
+  id-token: write
+  contents: read
+
+env:
+  AWS_REGION: me-central-1
+  ECR_REPOSITORY: cargopulse-dev-api
+  ECS_CLUSTER: cargopulse-dev-cluster
+  ECS_SERVICE: cargopulse-dev-api
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - id: ecr
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Build and push
+        env:
+          REGISTRY: ${{ steps.ecr.outputs.registry }}
+        run: |
+          IMAGE=$REGISTRY/$ECR_REPOSITORY
+          docker build -t $IMAGE:${{ github.sha }} -t $IMAGE:latest 03-three-tier-platform/app
+          docker push $IMAGE:${{ github.sha }}
+          docker push $IMAGE:latest
+
+      - name: Roll out
+        run: |
+          aws ecs update-service --cluster $ECS_CLUSTER --service $ECS_SERVICE --force-new-deployment
+          aws ecs wait services-stable --cluster $ECS_CLUSTER --services $ECS_SERVICE

@@ -1,0 +1,6 @@
+sku,product,quantity,reorder_level
+LUB-001,Engine Oil 5L,4,10
+LUB-002,Gear Oil 1L,50,20
+LUB-003,Hydraulic Oil 20L,3,5
+LUB-004,Coolant 4L,120,30
+LUB-005,Grease Cartridge,8,15
